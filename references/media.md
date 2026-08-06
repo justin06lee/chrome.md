@@ -38,7 +38,18 @@ page.
 least reliable part of any music api — expired cdn links, podcasts with no art,
 local files — so `onError` swaps to a disc glyph and the tile **keeps its exact
 footprint**. a placeholder that changes size shifts the whole layout, which is
-what hand-rolled versions get wrong.
+what hand-rolled versions get wrong. failure is tracked as the **list of urls
+that failed**, not a boolean, so handing the tile a new `src` is a fresh attempt
+by construction — one dead cover never poisons the tile for the track after it,
+and there is no reset effect to forget.
+
+`src` also takes an **array**, which is the shape a playlist or a folder has
+instead of a cover: up to four urls (the rest are ignored) laid out so the
+square is always fully covered — two become halves, three a half plus two
+quarters, four a grid. the first tile spans both rows below four precisely so
+there is never a visible empty cell. urls that fail drop out of the mosaic, so
+three good covers out of four still tile correctly rather than leaving a hole.
+`alt` describes the tile as a whole and is carried by the first image only.
 
 it renders a plain `<img>`, not a framework image component, so it works outside
 next.js like everything else in the library — `loading="lazy"` and
@@ -46,10 +57,11 @@ next.js like everything else in the library — `loading="lazy"` and
 picture. `onClick` renders the tile as a button and `href` as a link (through
 `linkComponent` for internal routes).
 
-`bleed` only really reads at `lg` and up, which is why it's off by default.
+`bleed` only really reads at `lg` and up, which is why it's off by default; it
+blurs the **first** url, so a mosaic throws the colour of its first cover.
 
 **Key props:**
-- `src: string` — cover url; omit or let it fail and the fallback takes over.
+- `src: string | string[]` — cover url; omit or let it fail and the fallback takes over. an array is a mosaic — up to four covers laid out so the tile is always fully filled.
 - `alt: string = ''` — describe the record, not the picture.
 - `size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md'` — 'full' fills the container as a square.
 - `bleed: boolean = false` — blurred copy of the art behind the tile; only reads at lg and up.
@@ -233,8 +245,8 @@ entirely, because a scrubber that chases the cursor feels broken. preserve both
 if you restyle it.
 
 `remaining` counts the right-hand label down (`-1:23`) instead of showing the
-total. pair with `now-playing-bar` for the surrounding bar and `sound-bars` (in
-`references/effects.md`) for the playing indicator on a track row.
+total. pair with `now-playing-bar` for the surrounding bar and `sound-bars` for
+the playing indicator on a track row — both above, in this file.
 
 **Key props:**
 - `position: number` — required — last known position in seconds.
@@ -282,8 +294,7 @@ information for anyone who can't see the bars — pass `label={null}` when an
 adjacent "now playing" label already says it.
 
 `accent` defaults to `currentColor`, so it inherits the row it sits in. pair it
-with `playhead` and `now-playing-bar` (both in
-`references/time-scheduling.md`).
+with `playhead` and `now-playing-bar`, both in this file.
 
 **Key props:**
 - `bars: number = 4` — how many bars (1–12).
@@ -508,7 +519,11 @@ to reflect the value. that's the whole justification for a separate component.
 
 the behaviour worth relying on: **muting leaves `value` untouched** and only
 draws the track dimmed, so unmuting restores exactly the level you had. don't
-implement mute by setting the value to 0.
+implement mute by setting the value to 0. touching the slider while muted
+unmutes on its own — moving it is an unambiguous "i want to hear this".
+
+the whole control is **one tab stop**: arrows move by 5%, page keys by 20%, and
+home/end jump to silence and full.
 
 `collapsible` hides the track until the control is hovered or focused — for a
 player bar where volume is secondary to everything beside it.

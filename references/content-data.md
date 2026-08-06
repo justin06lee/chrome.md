@@ -1,6 +1,6 @@
 # content & data display
 
-components for rendering content and data: markdown pipelines (prose, collapsible-prose, article, code-block), browsable collections (gallery, article-list, file-card), documents (docket), quantitative display (stat-tile, sparkline, bar-list, streak, detail-list), plus an image cropper, a credential form, and a demo frame (showcase). all share the registry's brutalist conventions: square corners, thin `white/10`–`white/20` borders, mono accents, lowercase copy. every component takes `className` on its root even where meta.ts omits it.
+components for rendering content and data: markdown pipelines (prose, collapsible-prose, article, code-block), browsable collections (gallery, shelf, article-list, file-card), documents (docket), quantitative display (stat-tile, sparkline, bar-list, streak, detail-list), plus an image cropper, a credential form, and a demo frame (showcase). all share the registry's brutalist conventions: square corners, thin `white/10`–`white/20` borders, mono accents, lowercase copy. every component takes `className` on its root even where meta.ts omits it.
 
 the quantitative set divides by what it can show, and picking wrong is the usual mistake: `stat-tile` is one headline figure (with a delta and a slot a `sparkline` drops into), `sparkline` is one series over time, `bar-list` ranks a handful of labeled quantities, `streak` is an unbroken run plus its recent history, and `detail-list` is unrelated label/value facts about one thing. for a year of density go to `heatmap`, and for a day of scheduled blocks `timeline` — both in `references/time-scheduling.md`.
 
@@ -383,6 +383,48 @@ vs siblings: prose is the renderer; `article` is the page layout that typically 
 **Example:**
 ```tsx
 <Prose>{`# hello\n\nmarkdown with $e^{i\\pi} + 1 = 0$ and \`\`\`ts\ncode\n\`\`\``}</Prose>
+```
+
+## shelf
+
+**Role:** horizontally scrolling row of cards — the browsable counterpart to gallery's searchable grid.
+**Install:** `bunx @justin06lee/chrome@latest add shelf`
+**Composes:** npm: `lucide-react`; registry: nothing beyond utils
+
+an optional mono uppercase `title` with an `action` slot beside it (a "see all" link, a count), over a horizontal track. every direct child is wrapped in a `shrink-0` box of exactly `itemWidth` px, so the cards themselves never decide their own width — the shelf does, and the row stays even. `null`/`false` children are dropped rather than wrapped, so conditionally rendered cards don't leave holes in the row.
+
+**scrolling is native, and that is the whole design.** the track is a plain `overflow-x-auto` element (scrollbar hidden, `snap-x snap-mandatory` with `snap-start` per item when `snap` is on), so trackpad, touch, shift+wheel and keyboard all work without being reimplemented; the arrows only call `scrollBy`. anything that reimplements horizontal scrolling in javascript loses momentum on touch and inertia on a trackpad, and this deliberately doesn't.
+
+**the arrows appear only once the row genuinely overflows, and that is measured, not assumed.** a `ResizeObserver` watches the track *and every child*, because the same six cards overflow on a phone and don't on a desktop — an item count can't tell you which. each arrow then disables at its end, with a pixel of slack in the comparison: sub-pixel layout means `scrollLeft` rarely lands exactly on the maximum, and without the slack the right arrow stays enabled forever at the end of the row. a page is `clientWidth - (itemWidth + gap)` — a viewport minus one card, never less than one whole item — so a card you were just looking at is still on screen after a press instead of teleporting you into unfamiliar content. under `prefers-reduced-motion` the same jump happens instantly rather than smoothly.
+
+two gotchas. the edge the content continues past is faded with a `mask-image`, so an overflowing row reads as cut off rather than as ending there — if you restyle the track, keep the mask or the row starts lying about how much is left. and the track is a focusable `role="region"`, whose accessible name comes from `ariaLabel`, falling back to `title` **only when title is a string** — pass a JSX title (an icon, a styled span) and the region silently loses its name, so pass `ariaLabel` alongside it.
+
+worth knowing: the header row renders whenever `title`, `action` *or* `arrows` is truthy, and `arrows` defaults to true — a bare `<Shelf>` with no title and no action still emits an empty header and its `mb-3`. pass `arrows={false}` to drop the spacer.
+
+vs siblings: `gallery` is the searchable, filterable, sortable grid you send someone to when they're looking for a specific thing, and it brings its own page heading and margins; a shelf is the opposite errand — a row you skim, stacked with other rows, where the point is that there is more off the edge of the screen. `track-list` is the vertical read-and-pick list, and `stack` (in `references/effects.md`) is the fanned pile rather than a row.
+
+**Key props:**
+- `children: ReactNode` (required) — the cards; each is given itemWidth and made unshrinkable.
+- `title: ReactNode` — mono uppercase heading above the row.
+- `action: ReactNode` — right-hand slot on the title line — a "see all" link, a count.
+- `itemWidth: number = 176` — width of each item in px.
+- `gap: number = 16`
+- `arrows: boolean = true` — paging buttons, shown only when the row overflows.
+- `snap: boolean = true` — snap each item to the left edge as you scroll.
+- `ariaLabel: string` — accessible name for the scroll region; falls back to title when it's a string.
+- `className: string`
+
+**Example:**
+```tsx
+<Shelf title="recently played" itemWidth={200} action={<a href="/library">see all</a>}>
+  {albums.map((album) => (
+    <button key={album.id} className="flex flex-col gap-2 text-left" onClick={() => play(album.id)}>
+      <AlbumArt src={album.covers} alt={album.title} size="full" />
+      <span className="truncate text-[13px] text-white/80">{album.title}</span>
+      <span className="truncate text-[11px] text-white/40">{album.artist}</span>
+    </button>
+  ))}
+</Shelf>
 ```
 
 ## showcase

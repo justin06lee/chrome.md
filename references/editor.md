@@ -302,7 +302,7 @@ every mutation is a callback and the rows array is the source of truth — the t
 
 **Key props:**
 - `rows: ManagerRow[]` (required) — rows to render; the source of truth, owned by the caller. a row with locked: true renders without rename/delete affordances.
-- `palette: ManagerPaletteEntry[]` — swatch colors: bare hexes or { value, name } (name shows in the tooltip). defaults to CATEGORY_PALETTE's named muted hexes.
+- `palette: ManagerPaletteEntry[] = CATEGORY_PALETTE` — swatch colors: bare hexes or { value, name } (name shows in the tooltip). defaults to CATEGORY_PALETTE's named muted hexes.
 - `onRename: (id: string, name: string) => void | Promise<void>` — commit a renamed row. reject to roll the name back and surface the error under the row.
 - `onRecolor: (id: string, color: string) => void | Promise<void>` — commit a recolored row. reject to surface the error under the row.
 - `onArchive: (id: string, archived: boolean) => void | Promise<void>` — toggle a row's archived flag. reject to surface the error under the row.

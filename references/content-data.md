@@ -107,6 +107,66 @@ density across a year.
 />
 ```
 
+## chat-composer
+
+**Role:** the line you type into, under a `chat-log`.
+**Install:** `bunx @justin06lee/chrome@latest add chat-composer`
+**Composes:** lucide-react (npm)
+
+a single-line form: transparent input, a bordered send icon-button, and an inline error line. it owns the draft and nothing else — no transport, no message list, no identity; the caller brings all of that through `onSend`. the send is optimistic in the direction that matters: the draft clears immediately, and if `onSend` rejects (or throws) the exact sentence is put back in the input alongside "that didn't send" — losing a typed sentence to a dropped request is the one failure a chat box must not have. a character count appears only once the draft passes 80% of `maxLength`, because a counter over an empty box is noise.
+
+it is split from `chat-log` rather than bundled because the two have different reasons to re-render — the log repaints on every arriving message, the composer only on your own keystrokes — and because a read-only room is a real state: render the log without this and there is nothing to disable or explain. when it *is* rendered but the room is closed, pass `disabled` with a `disabledHint` and the whole input is replaced by the explanation, where the reader is already looking.
+
+vs `textarea`: textarea is a form field that participates in a submit; this is a fire-per-message control that clears itself and reports its own failures. vs `field`/`input`: those state an intent a form commits; a composer's enter key *is* the commit.
+
+**Key props:**
+- `onSend: (body: string) => void | Promise<void>` (required) — called with the trimmed draft. reject and the draft is restored alongside an inline error.
+- `placeholder: string = 'say something'`
+- `maxLength: number = 500` — hard input cap. a live count appears once the draft passes 80% of it.
+- `disabled: boolean = false`
+- `disabledHint: ReactNode` — shown in place of the input when disabled, so the closed room explains itself.
+- `ariaLabel: string = 'message'`
+- `className: string`
+
+**Example:**
+```tsx
+<ChatComposer
+  onSend={async (body) => {
+    const res = await fetch("/api/chat", { method: "POST", body: JSON.stringify({ body }) });
+    if (!res.ok) throw new Error("send failed"); // draft comes back on its own
+  }}
+/>
+```
+
+## chat-log
+
+**Role:** an append-only stream of messages that follows the newest one — unless the reader has scrolled up, in which case it holds still.
+**Install:** `bunx @justin06lee/chrome@latest add chat-log`
+**Composes:** lucide-react (npm)
+
+a scrollable `role="log"` region (`aria-live="polite"`, one tab stop) that renders `{ id, name, body, createdAt, mine? }` messages oldest-first. consecutive messages from one sender inside `groupWithinMs` share a single name line, timestamps render as `<time>` in the reader's locale, and `mine` messages get the full-white name so your own words are findable at a glance. when the reader is away from the bottom and content arrives, a "jump to latest" pill floats over the log rather than yanking the scroll position.
+
+the non-obvious part is how "was the reader at the bottom" is decided. appending a message changes `scrollHeight`, so by the time an effect runs after a commit the distance-from-bottom already reflects the new content and can no longer answer the question. the pin flag is tracked in the scroll handler instead — which fires on reader movement and *not* on content growth — so it still describes where the reader was when the message landed. the snap itself runs in a layout effect, because jumping after paint shows one frame of the wrong position on every message.
+
+it renders whatever array it is given and nothing more: no fetching, no windowing, no dedup. cap the array yourself (the last few hundred is plenty) — ten thousand rows will cost you before they cost it.
+
+vs `track-list` / `article-list`: those render a collection that happens to be ordered; this is a *stream*, and its whole contract is what happens when content arrives while you're looking at it — behaviour neither of those has and neither should grow. pair with `chat-composer` below it; leave the composer out entirely for a read-only room.
+
+**Key props:**
+- `messages: ChatMessage[]` (required) — `{ id, name, body, createdAt (epoch ms), mine? }`. `mine` emphasises the viewer's own messages.
+- `empty: ReactNode` — shown in place of the list when there is nothing yet.
+- `groupWithinMs: number = 120000` — consecutive messages from one person inside this window share a name line. 0 disables grouping.
+- `ariaLabel: string = 'chat'`
+- `className: string`
+
+**Example:**
+```tsx
+<div className="flex h-96 flex-col border border-white/10">
+  <ChatLog messages={messages} empty={<p className="py-8 text-center text-[13px] text-white/30">nobody has said anything yet.</p>} />
+  <ChatComposer onSend={send} />
+</div>
+```
+
 ## code-block
 
 **Role:** syntax-highlighted code box with a built-in copy button.

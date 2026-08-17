@@ -1,8 +1,14 @@
+<div align="center">
+
+<img src="assets/chrome.md.svg" alt="chrome.md" width="480" />
+
 # chrome.md
 
-the [claude code](https://claude.com/claude-code) skill for
-[chrome](https://chrome.justin06lee.dev) — justin06lee's dark-only,
-own-the-code react component registry.
+**the [claude code](https://claude.com/claude-code) skill for [chrome](https://chrome.justin06lee.dev) — justin06lee's dark-only, own-the-code react component registry.**
+
+</div>
+
+---
 
 it teaches an agent the entire library: what every component does, how it
 works internally, every prop with its type and default, which components

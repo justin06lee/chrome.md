@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/chrome.md.svg" alt="chrome.md" width="480" />
+<img src="assets/chrome.md.svg" alt="chrome.md" width="300" />
 
 # chrome.md
 
